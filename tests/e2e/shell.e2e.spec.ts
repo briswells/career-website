@@ -1,5 +1,10 @@
 import { expect, test } from '@playwright/test'
 
+test('homepage renders an identifiable heading', async ({ page }) => {
+  await page.goto('/')
+  await expect(page.getByRole('heading', { level: 1, name: 'Brian Wells' })).toBeVisible()
+})
+
 test('header exposes primary navigation', async ({ page }) => {
   await page.goto('/')
   const nav = page.getByRole('navigation', { name: 'Primary' })

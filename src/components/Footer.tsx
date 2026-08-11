@@ -12,7 +12,8 @@ export function Footer({
   links?: FooterLink[]
 }) {
   const year = new Date().getFullYear()
-  const hasEmail = Boolean(email && email.trim())
+  const trimmedEmail = email?.trim() ?? ''
+  const hasEmail = trimmedEmail.length > 0
   const visibleLinks = links ?? []
 
   return (
@@ -24,7 +25,7 @@ export function Footer({
           </span>
           {hasEmail || visibleLinks.length > 0 ? (
             <div className={styles.footerLinks}>
-              {hasEmail ? <a href={`mailto:${email}`}>Email</a> : null}
+              {hasEmail ? <a href={`mailto:${trimmedEmail}`}>Email</a> : null}
               {visibleLinks.map((link) => (
                 <a key={link.url} href={link.url} rel="me noopener" target="_blank">
                   {link.platform}
