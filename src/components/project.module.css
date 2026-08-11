@@ -1,0 +1,36 @@
+.grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(320px, 1fr));
+  gap: var(--space-6);
+}
+
+.card {
+  display: flex;
+  flex-direction: column;
+  background: var(--color-surface);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-card);
+  overflow: hidden;
+  transition: border-color 0.15s ease;
+}
+
+.card:hover { border-color: var(--color-accent); }
+
+.thumb {
+  aspect-ratio: 16 / 9;
+  object-fit: cover;
+  width: 100%;
+  display: block;
+  border-bottom: 1px solid var(--color-border);
+}
+
+.body { padding: var(--space-5, 20px); display: flex; flex-direction: column; gap: var(--space-3); }
+
+.title { margin: 0; font-size: 1.125rem; }
+
+.title a { color: var(--color-text); text-decoration: none; }
+.title a:hover { color: var(--color-accent); }
+
+.summary { margin: 0; font-size: 0.9375rem; color: var(--color-text-muted); }
+
+.tags { display: flex; flex-wrap: wrap; gap: var(--space-2); }

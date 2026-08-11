@@ -1,11 +1,3 @@
-// @vitest-environment node
-//
-// This suite uploads real file buffers through Payload's local API, which
-// runs them through the `file-type` package for MIME sniffing. That package
-// picks a different (browser-oriented) code path under the shared jsdom
-// environment and fails to read a plain Node Buffer. Overriding to the node
-// environment for this file only avoids changing the shared jsdom default
-// that the rest of the suite relies on.
 import { describe, expect, it } from 'vitest'
 import config from '@payload-config'
 import { getPayload } from 'payload'
