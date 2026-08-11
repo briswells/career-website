@@ -13,7 +13,7 @@ type SectionProps = { children: ReactNode } & (
 export function Section({ title, children, id }: SectionProps) {
   // aria-labelledby gives the section an accessible name, so it is exposed as a
   // landmark and reachable via getByRole('region', { name }) in tests.
-  const headingId = id ? `${id}-heading` : undefined
+  const headingId = title && id ? `${id}-heading` : undefined
   return (
     <section className={styles.section} id={id} aria-labelledby={headingId}>
       {title ? (
