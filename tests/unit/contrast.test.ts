@@ -79,4 +79,18 @@ describe.each(themes)('%s theme contrast', (_name, index) => {
     const tok = t()
     expect(contrast(tok['--color-error'], tok['--color-surface'])).toBeGreaterThanOrEqual(4.5)
   })
+
+  it('muted text on accent-soft fill meets AA (4.5:1)', () => {
+    const tok = t()
+    expect(
+      contrast(tok['--color-text-muted'], tok['--color-accent-soft']),
+    ).toBeGreaterThanOrEqual(4.5)
+  })
+
+  it('accent text on accent-soft fill meets AA (4.5:1)', () => {
+    const tok = t()
+    expect(
+      contrast(tok['--color-accent'], tok['--color-accent-soft']),
+    ).toBeGreaterThanOrEqual(4.5)
+  })
 })
