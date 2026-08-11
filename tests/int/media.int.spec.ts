@@ -1,23 +1,77 @@
+// @vitest-environment node
+//
+// This suite uploads real file buffers through Payload's local API, which
+// runs them through the `file-type` package for MIME sniffing. That package
+// picks a different (browser-oriented) code path under the shared jsdom
+// environment and fails to read a plain Node Buffer. Overriding to the node
+// environment for this file only avoids changing the shared jsdom default
+// that the rest of the suite relies on.
 import { describe, expect, it } from 'vitest'
 import config from '@payload-config'
 import { getPayload } from 'payload'
+import type { File, RequiredDataFromCollectionSlug } from 'payload'
+import sharp from 'sharp'
+
+/**
+ * Generates a solid-color PNG in memory at test time (no committed binary
+ * fixture). Wider than the largest configured image size (`hero`, 1600px)
+ * so every configured size is actually produced by Payload's sharp pipeline.
+ */
+async function createTestImage(width: number, height: number): Promise<File> {
+  const data = await sharp({
+    create: {
+      width,
+      height,
+      channels: 3,
+      background: { r: 200, g: 30, b: 30 },
+    },
+  })
+    .png()
+    .toBuffer()
+
+  return {
+    data,
+    mimetype: 'image/png',
+    name: 'media-int-spec-test-image.png',
+    size: data.length,
+  }
+}
 
 describe('media collection', () => {
-  it('requires alt text', async () => {
+  it('rejects creating a document without alt text', async () => {
     const payload = await getPayload({ config })
-    const field = payload.collections.media.config.fields.find(
-      (f) => 'name' in f && f.name === 'alt',
-    )
-    expect(field).toBeDefined()
-    expect(field && 'required' in field && field.required).toBe(true)
+    const file = await createTestImage(50, 50)
+
+    await expect(
+      payload.create({
+        collection: 'media',
+        // Intentionally invalid: omits the required `alt` field to verify
+        // Payload rejects it at runtime, not just in the static config shape.
+        data: {} as unknown as RequiredDataFromCollectionSlug<'media'>,
+        file,
+      }),
+    ).rejects.toThrow()
   })
 
-  it('defines the four named image sizes', async () => {
+  it('generates the four named image sizes on upload', async () => {
     const payload = await getPayload({ config })
-    const sizes = payload.collections.media.config.upload
-    const names = (typeof sizes === 'object' && sizes.imageSizes ? sizes.imageSizes : []).map(
-      (s) => s.name,
-    )
-    expect(names).toEqual(['thumbnail', 'card', 'hero', 'og'])
+    const file = await createTestImage(2000, 2000)
+
+    const doc = await payload.create({
+      collection: 'media',
+      data: { alt: 'A solid red square used for media collection int tests' },
+      file,
+    })
+
+    try {
+      expect(Object.keys(doc.sizes ?? {}).sort()).toEqual(['card', 'hero', 'og', 'thumbnail'])
+      expect(doc.sizes?.thumbnail?.width).toBe(400)
+      expect(doc.sizes?.card?.width).toBe(768)
+      expect(doc.sizes?.hero?.width).toBe(1600)
+      expect(doc.sizes?.og?.width).toBe(1200)
+      expect(doc.sizes?.og?.height).toBe(630)
+    } finally {
+      await payload.delete({ collection: 'media', id: doc.id })
+    }
   })
 })
