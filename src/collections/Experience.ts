@@ -30,6 +30,14 @@ export const Experience: CollectionConfig = {
       name: 'endDate',
       type: 'date',
       admin: { condition: (data) => !data?.current },
+      hooks: {
+        // Admin `condition` above only hides the field in the UI; Payload
+        // does not clear its stored value. Without this, an editor who
+        // enters an end date and later checks `current` leaves a stale
+        // endDate in the document that resurfaces if `current` is
+        // unchecked again without re-entering a date.
+        beforeChange: [({ siblingData, value }) => (siblingData?.current ? null : value)],
+      },
     },
     {
       name: 'bullets',
