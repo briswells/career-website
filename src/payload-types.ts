@@ -228,7 +228,7 @@ export interface Project {
    * One or two sentences. Used on cards and as the meta description.
    */
   summary: string;
-  coverImage: number | Media;
+  coverImage?: (number | null) | Media;
   gallery?: (number | Media)[] | null;
   /**
    * What you personally did.

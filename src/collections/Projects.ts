@@ -48,7 +48,7 @@ export const Projects: CollectionConfig = {
       maxLength: 220,
       admin: { description: 'One or two sentences. Used on cards and as the meta description.' },
     },
-    { name: 'coverImage', type: 'upload', relationTo: 'media', required: true },
+    { name: 'coverImage', type: 'upload', relationTo: 'media' },
     { name: 'gallery', type: 'upload', relationTo: 'media', hasMany: true },
     { name: 'role', type: 'text', admin: { description: 'What you personally did.' } },
     { name: 'timeframe', type: 'text', admin: { description: 'e.g. 2024–2025' } },
