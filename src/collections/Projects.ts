@@ -1,8 +1,8 @@
-import type { CollectionConfig } from 'payload'
+import type { CollectionConfig, TypeWithID } from 'payload'
 import { slugify } from '@/lib/slug'
 import { revalidateAfterChange, revalidateAfterDelete } from '@/lib/revalidate'
 
-type ProjectDoc = { slug?: string | null }
+type ProjectDoc = TypeWithID & { slug?: string | null }
 
 const projectPaths = (doc: ProjectDoc): string[] => [
   '/',
