@@ -13,6 +13,7 @@ const nextConfig: NextConfig = {
         pathname: '/api/media/file/**',
       },
     ],
+    remotePatterns: [{ protocol: 'https', hostname: 'media.brianwells.org' }],
   },
   webpack: (webpackConfig) => {
     webpackConfig.resolve.extensionAlias = {
