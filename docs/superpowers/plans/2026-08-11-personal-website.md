@@ -265,7 +265,7 @@ Then create a local, uncommitted `.env` pointing at a development database:
 
 ```bash
 cat > .env <<'EOF'
-DATABASE_URI=postgres://postgres:postgres@localhost:5432/brianwells_dev
+DATABASE_URI=postgres://postgres:postgres@localhost:5433/brianwells_dev
 NEXT_PUBLIC_SERVER_URL=http://localhost:3000
 EOF
 echo "PAYLOAD_SECRET=$(openssl rand -hex 32)" >> .env
@@ -323,7 +323,16 @@ export default defineConfig({
 
 - [ ] **Step 9: Run the test to verify it fails**
 
-Ensure a Postgres database named `brianwells_dev` exists, then:
+A dedicated Postgres container is already running for this project — `brianwells-dev-db`
+on host port **5433**, with `brianwells_dev` and `brianwells_test` created. Port 5432 on
+this machine belongs to an unrelated project's database; never point at it. To confirm the
+container is up:
+
+```bash
+docker exec brianwells-dev-db pg_isready -U postgres
+```
+
+Then:
 
 ```bash
 npm run test:int
@@ -4405,7 +4414,7 @@ services:
 ```bash
 docker build -t brianwells-org:local .
 docker run --rm -p 3000:3000 --env-file .env \
-  -e DATABASE_URI="postgres://postgres:postgres@host.docker.internal:5432/brianwells_dev" \
+  -e DATABASE_URI="postgres://postgres:postgres@host.docker.internal:5433/brianwells_dev" \
   brianwells-org:local
 ```
 
