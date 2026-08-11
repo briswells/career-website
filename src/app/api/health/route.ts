@@ -9,7 +9,8 @@ export async function GET(): Promise<Response> {
     // Exercises a real query through the configured adapter.
     await payload.count({ collection: 'users' })
     return Response.json({ status: 'ok' }, { status: 200 })
-  } catch {
+  } catch (error) {
+    console.error(error)
     return Response.json({ status: 'error' }, { status: 503 })
   }
 }
