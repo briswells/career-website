@@ -1,0 +1,25 @@
+import { expect, test } from '@playwright/test'
+
+test('header exposes primary navigation', async ({ page }) => {
+  await page.goto('/')
+  const nav = page.getByRole('navigation', { name: 'Primary' })
+  await expect(nav.getByRole('link', { name: 'Work' })).toBeVisible()
+  await expect(nav.getByRole('link', { name: 'Experience' })).toBeVisible()
+  await expect(nav.getByRole('link', { name: 'About' })).toBeVisible()
+  await expect(nav.getByRole('link', { name: 'Contact' })).toBeVisible()
+})
+
+test('footer renders without empty contact links', async ({ page }) => {
+  await page.goto('/')
+  const footer = page.getByRole('contentinfo')
+  await expect(footer).toBeVisible()
+  // Contact details are unset at launch: no mailto link should exist at all.
+  await expect(footer.locator('a[href^="mailto:"]')).toHaveCount(0)
+  await expect(footer.locator('a[href=""]')).toHaveCount(0)
+})
+
+test('skip link is the first focusable element', async ({ page }) => {
+  await page.goto('/')
+  await page.keyboard.press('Tab')
+  await expect(page.getByRole('link', { name: 'Skip to content' })).toBeFocused()
+})

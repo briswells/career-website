@@ -3,6 +3,12 @@ import { login } from '../helpers/login'
 import { seedTestUser, cleanupTestUser, testUser } from '../helpers/seedUser'
 
 test.describe('Admin Panel', () => {
+  // This suite seeds/cleans up a single shared user in beforeAll/afterAll, so its
+  // tests must stay on one worker: with the new fullyParallel:true config,
+  // Playwright would otherwise schedule them onto separate workers, running
+  // beforeAll multiple times concurrently against the same DB row.
+  test.describe.configure({ mode: 'serial' })
+
   let page: Page
 
   test.beforeAll(async ({ browser }, _testInfo) => {

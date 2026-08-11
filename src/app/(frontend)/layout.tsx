@@ -1,18 +1,19 @@
-import React from 'react'
+import type { ReactNode } from 'react'
+import { Footer } from '@/components/Footer'
+import { Header } from '@/components/Header'
+import styles from '@/components/layout.module.css'
 import './styles.css'
 
-export const metadata = {
-  description: 'A blank template using Payload in a Next.js app.',
-  title: 'Payload Blank Template',
-}
-
-export default async function RootLayout(props: { children: React.ReactNode }) {
-  const { children } = props
-
+export default function FrontendLayout({ children }: { children: ReactNode }) {
   return (
     <html lang="en">
       <body>
-        <main>{children}</main>
+        <a href="#content" className={styles.skipLink}>
+          Skip to content
+        </a>
+        <Header name="Brian Wells" />
+        <main id="content">{children}</main>
+        <Footer name="Brian Wells" />
       </body>
     </html>
   )
