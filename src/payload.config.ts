@@ -11,6 +11,9 @@ import { Media } from './collections/Media'
 import { Projects } from './collections/Projects'
 import { Experience } from './collections/Experience'
 import { Education } from './collections/Education'
+import { SiteSettings } from './globals/SiteSettings'
+import { About } from './globals/About'
+import { Skills } from './globals/Skills'
 
 const filename = fileURLToPath(import.meta.url)
 const dirname = path.dirname(filename)
@@ -21,6 +24,7 @@ export default buildConfig({
     importMap: { baseDir: path.resolve(dirname) },
   },
   collections: [Users, Media, Projects, Experience, Education],
+  globals: [SiteSettings, About, Skills],
   editor: lexicalEditor(),
   secret: process.env.PAYLOAD_SECRET || '',
   typescript: {
