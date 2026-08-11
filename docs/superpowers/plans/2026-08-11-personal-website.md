@@ -20,7 +20,7 @@ These apply to every task. Every task's requirements implicitly include this sec
 - **Node 24 in the container** (`node:24-alpine`). Local development requires Node >= 20.9.
 - **TypeScript `strict: true`.** No `any`, no `@ts-ignore`. If types fight you, fix the type.
 - **Accent colors are exactly `#0f766e` (light) and `#2dd4bf` (dark).** Surfaces are warm-neutral, never blue-grey.
-- **Components must never contain literal color values.** All color comes from CSS custom properties defined in `src/styles/tokens.css`.
+- **Components must never contain literal color values.** All color comes from CSS custom properties defined in `src/styles/tokens.css`. The sole exception is `opengraph-image.tsx` (Task 15), which renders in an isolated Satori context that cannot read custom properties.
 - **Every accent-on-surface pairing must pass WCAG AA (4.5:1 for body text, 3:1 for large text and UI borders) in both themes.** Task 2 adds a test that enforces this.
 - **Every contact detail and social link must conditionally render.** Unset values produce no DOM output — never an empty `mailto:` or a placeholder string. Contact fields are deliberately empty at launch.
 - **Every image requires alt text.** The `media` collection enforces this at the schema level.
@@ -473,6 +473,16 @@ describe.each(themes)('%s theme contrast', (_name, index) => {
       contrast(tok['--color-accent-contrast'], tok['--color-accent']),
     ).toBeGreaterThanOrEqual(4.5)
   })
+
+  it('error text on background meets AA (4.5:1)', () => {
+    const tok = t()
+    expect(contrast(tok['--color-error'], tok['--color-bg'])).toBeGreaterThanOrEqual(4.5)
+  })
+
+  it('error text on surface meets AA (4.5:1)', () => {
+    const tok = t()
+    expect(contrast(tok['--color-error'], tok['--color-surface'])).toBeGreaterThanOrEqual(4.5)
+  })
 })
 ```
 
@@ -499,6 +509,7 @@ Expected: FAIL — `ENOENT: no such file or directory, open 'src/styles/tokens.c
   --color-accent-hover: #0b5d57;
   --color-accent-contrast: #ffffff;
   --color-accent-soft: #e6f4f2;
+  --color-error: #b3261e;
 
   --font-sans: -apple-system, BlinkMacSystemFont, 'Segoe UI', Inter, Roboto,
     'Helvetica Neue', Arial, sans-serif;
@@ -532,6 +543,7 @@ Expected: FAIL — `ENOENT: no such file or directory, open 'src/styles/tokens.c
     --color-accent-hover: #5eead4;
     --color-accent-contrast: #0b1614;
     --color-accent-soft: #16302c;
+    --color-error: #f2b8b5;
   }
 }
 ```
@@ -542,7 +554,7 @@ Expected: FAIL — `ENOENT: no such file or directory, open 'src/styles/tokens.c
 npm run test:unit
 ```
 
-Expected: PASS, 10 tests. If any pairing fails, darken or lighten the offending token until it passes — do not weaken the assertion.
+Expected: PASS, 14 tests. If any pairing fails, darken or lighten the offending token until it passes — do not weaken the assertion.
 
 - [ ] **Step 5: Wire tokens into global styles**
 
@@ -1221,7 +1233,7 @@ export function slugify(input: string): string {
 npm run test:unit
 ```
 
-Expected: PASS, 16 tests total (10 contrast + 6 slug).
+Expected: PASS, 20 tests total (14 contrast + 6 slug).
 
 - [ ] **Step 5: Write the revalidation helpers**
 
@@ -1462,7 +1474,7 @@ The separator is an en dash (U+2013), matching the test.
 npm run test:unit
 ```
 
-Expected: PASS, 22 tests total.
+Expected: PASS, 26 tests total.
 
 - [ ] **Step 5: Implement the Experience collection**
 
@@ -1639,7 +1651,7 @@ export function presentLinks(links: MaybeLink[] | null | undefined): PresentLink
 npm run test:unit
 ```
 
-Expected: PASS, 28 tests total.
+Expected: PASS, 32 tests total.
 
 - [ ] **Step 5: Implement the globals**
 
@@ -2438,7 +2450,7 @@ export function RichText({ data }: { data: SerializedEditorState | null | undefi
 npm run test:unit
 ```
 
-Expected: PASS, 32 tests total. If `toHaveAttribute` is unavailable, add `import '@testing-library/jest-dom/vitest'` to `vitest.setup.ts` and `@testing-library/jest-dom` to devDependencies.
+Expected: PASS, 36 tests total. If `toHaveAttribute` is unavailable, add `import '@testing-library/jest-dom/vitest'` to `vitest.setup.ts` and `@testing-library/jest-dom` to devDependencies.
 
 - [ ] **Step 8: Commit**
 
@@ -3562,7 +3574,7 @@ export async function verifyTurnstile(
 npm run test:unit
 ```
 
-Expected: PASS, 51 tests total (32 prior + 8 schema + 6 hash + 5 Turnstile).
+Expected: PASS, 55 tests total (36 prior + 8 schema + 6 hash + 5 Turnstile).
 
 - [ ] **Step 7: Write the failing rate-limit integration test**
 
@@ -3919,7 +3931,7 @@ export async function submitContact(
 
 .field textarea { min-height: 160px; resize: vertical; }
 
-.error { color: #b3261e; font-size: 0.8125rem; }
+.error { color: var(--color-error); font-size: 0.8125rem; }
 .success { color: var(--color-accent); font-weight: 600; }
 
 .submit {
@@ -3935,13 +3947,9 @@ export async function submitContact(
 }
 
 .submit:disabled { opacity: 0.6; cursor: progress; }
-
-@media (prefers-color-scheme: dark) {
-  .error { color: #f2b8b5; }
-}
 ```
 
-The two `.error` colors are the one deliberate exception to the no-literal-colors rule: they are semantic error states with no token equivalent. Both pass AA against their surfaces.
+Error text uses `var(--color-error)`, which swaps automatically with the theme and is covered by the Task 2 contrast test — no literal colors, no dark-mode override needed here.
 
 `src/components/ContactForm.tsx`:
 
@@ -4751,9 +4759,10 @@ These require Brian and are deliberately outside the plan:
   upgrade.
 - **`src/lib/contact-schema.ts` uses an explicit email regex** rather than Zod's built-in
   email validator, so error copy and trim ordering stay stable across Zod minor releases.
-- **Two literal color values** appear in `contact.module.css` for form error text. There is
-  no error token in the design system and adding one for a single use would be premature.
-  Both values meet AA against their surfaces.
+- **Open Graph images inline their colors**, the single exception to the no-literal-colors
+  constraint. `ImageResponse` renders in an isolated Satori context with no access to CSS
+  custom properties, so the dark-theme token values are copied in as literals. This is the
+  only place in the codebase where that is permitted.
 - **Open Graph images use Next's `opengraph-image.tsx` file convention** rather than the
   spec's sketched `/og/[...]` route. Next generates the route *and* injects the
   `og:image` meta tag automatically, removing a class of wiring bugs. The generated
