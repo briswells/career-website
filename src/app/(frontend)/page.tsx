@@ -1,10 +1,12 @@
 import { ExperienceTimeline } from '@/components/ExperienceTimeline'
 import { Hero } from '@/components/Hero'
 import { ProjectGrid } from '@/components/ProjectGrid'
+import { Button } from '@/components/ui/Button'
 import { Container } from '@/components/ui/Container'
 import { Section } from '@/components/ui/Section'
+import { asMedia } from '@/lib/media'
 import { getAbout, getExperience, getProjects, getSiteSettings } from '@/lib/queries'
-import type { Media } from '@/payload-types'
+import styles from '@/components/layout.module.css'
 
 export default async function HomePage() {
   const [settings, about, featured, experience] = await Promise.all([
@@ -14,12 +16,8 @@ export default async function HomePage() {
     getExperience(),
   ])
 
-  const portrait =
-    about.portrait && typeof about.portrait === 'object' ? (about.portrait as Media) : null
-  const resume =
-    settings.resumePdf && typeof settings.resumePdf === 'object'
-      ? (settings.resumePdf as Media)
-      : null
+  const portrait = asMedia(about.portrait)
+  const resume = asMedia(settings.resumePdf)
 
   return (
     <Container>
@@ -35,6 +33,12 @@ export default async function HomePage() {
       </Section>
       <Section title="Experience" id="experience">
         <ExperienceTimeline items={experience} />
+      </Section>
+      <Section title="Get in touch" id="contact-cta">
+        <div className={styles.ctaRow}>
+          <p>Have a role or project in mind? Get in touch.</p>
+          <Button href="/contact">Contact me</Button>
+        </div>
       </Section>
     </Container>
   )

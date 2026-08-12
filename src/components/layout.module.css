@@ -8,6 +8,20 @@
 .section { padding: var(--space-12) 0; }
 .sectionTitle { margin-bottom: var(--space-8); }
 
+.ctaRow {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-6);
+}
+
+.ctaRow p {
+  margin: 0;
+  color: var(--color-text-muted);
+  font-size: 1.0625rem;
+}
+
 .header {
   position: sticky;
   top: 0;
