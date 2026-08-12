@@ -7,6 +7,7 @@ type ProjectDoc = TypeWithID & { slug?: string | null }
 const projectPaths = (doc: ProjectDoc): string[] => [
   '/',
   '/projects',
+  '/sitemap.xml',
   ...(doc.slug ? [`/projects/${doc.slug}`] : []),
 ]
 

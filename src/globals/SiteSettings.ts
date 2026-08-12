@@ -6,7 +6,9 @@ export const SiteSettings: GlobalConfig = {
   label: 'Site Settings',
   access: { read: () => true },
   hooks: {
-    afterChange: [revalidateGlobal(['/', '/projects', '/experience', '/about', '/contact'])],
+    afterChange: [
+      revalidateGlobal(['/', '/projects', '/experience', '/about', '/contact', '/sitemap.xml']),
+    ],
   },
   fields: [
     { name: 'name', type: 'text', required: true, defaultValue: 'Brian Wells' },
