@@ -11,6 +11,7 @@ import { Media } from './collections/Media'
 import { Projects } from './collections/Projects'
 import { Experience } from './collections/Experience'
 import { Education } from './collections/Education'
+import { ContactSubmissions } from './collections/ContactSubmissions'
 import { SiteSettings } from './globals/SiteSettings'
 import { About } from './globals/About'
 import { Skills } from './globals/Skills'
@@ -23,7 +24,7 @@ export default buildConfig({
     user: Users.slug,
     importMap: { baseDir: path.resolve(dirname) },
   },
-  collections: [Users, Media, Projects, Experience, Education],
+  collections: [Users, Media, Projects, Experience, Education, ContactSubmissions],
   globals: [SiteSettings, About, Skills],
   editor: lexicalEditor(),
   secret: process.env.PAYLOAD_SECRET || '',
