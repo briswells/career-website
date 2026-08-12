@@ -57,6 +57,20 @@ jobs:
 
       - run: npm run seed
 
+      # Without this, the only `next build` in the whole pipeline runs inside
+      # docker/build-push-action in the `publish` job below — after this job
+      # passes, and only on push to main. A PR could go green on a build that
+      # cannot actually be produced, and static-generation behavior (which
+      # pages get prerendered at build time vs. rendered per-request) is
+      # otherwise exercised only under `next dev`, which is always dynamic and
+      # would never have caught, e.g., a page that captures a build-time-only
+      # env var into prerendered HTML. `npm run seed` above already pushed
+      # schema and real rows into the service Postgres, so
+      # `/projects/[slug]`'s generateStaticParams (which queries Postgres
+      # directly during the build) has a migrated database to query, matching
+      # what the Dockerfile's build step requires.
+      - run: npm run build
+
       - run: npx playwright install --with-deps chromium
 
       - run: npm run test:e2e
