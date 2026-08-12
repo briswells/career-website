@@ -1,0 +1,30 @@
+.list { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: var(--space-8); }
+
+.item { display: flex; gap: var(--space-6); }
+
+.dates {
+  flex: none;
+  width: 160px;
+  font-size: 0.875rem;
+  color: var(--color-text-muted);
+  padding-top: 3px;
+}
+
+.detail { min-width: 0; }
+.role { margin: 0 0 var(--space-1); font-size: 1.0625rem; }
+.company { color: var(--color-text-muted); font-size: 0.9375rem; }
+
+.bullets {
+  margin: var(--space-3) 0 0;
+  padding-left: var(--space-4);
+  color: var(--color-text-muted);
+  font-size: 0.9375rem;
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+}
+
+@media (max-width: 720px) {
+  .item { flex-direction: column; gap: var(--space-2); }
+  .dates { width: auto; }
+}

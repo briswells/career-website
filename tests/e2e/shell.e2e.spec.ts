@@ -2,7 +2,9 @@ import { expect, test } from '@playwright/test'
 
 test('homepage renders an identifiable heading', async ({ page }) => {
   await page.goto('/')
-  await expect(page.getByRole('heading', { level: 1, name: 'Brian Wells' })).toBeVisible()
+  // Content is asserted by tests/e2e/home.e2e.spec.ts; this is a layout-shell
+  // smoke test that a top-level heading renders at all.
+  await expect(page.getByRole('heading', { level: 1 })).toBeVisible()
 })
 
 test('header exposes primary navigation', async ({ page }) => {

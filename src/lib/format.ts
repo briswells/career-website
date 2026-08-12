@@ -20,3 +20,24 @@ export function formatDateRange(
   if (!end) return startLabel
   return `${startLabel} – ${formatMonthYear(end)}`
 }
+
+/**
+ * Render-safe wrapper around formatDateRange. No collection validates date
+ * format at write time, so a malformed value would otherwise crash the page
+ * render. A personal site should not white-screen because one date is bad —
+ * callers get null back and can render the entry with its date omitted
+ * instead. formatMonthYear/formatDateRange keep their throwing contract
+ * (it's unit-tested and other callers may rely on it); this wrapper is the
+ * opt-in for render call sites that prefer to degrade gracefully.
+ */
+export function safeFormatDateRange(
+  start: string,
+  end?: string | null,
+  current?: boolean,
+): string | null {
+  try {
+    return formatDateRange(start, end, current)
+  } catch {
+    return null
+  }
+}

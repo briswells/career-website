@@ -1,0 +1,46 @@
+.hero {
+  display: flex;
+  gap: var(--space-12);
+  align-items: center;
+  padding: var(--space-16) 0 var(--space-12);
+}
+
+.copy { flex: 1; min-width: 0; }
+
+.status {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-2);
+  font-size: 0.8125rem;
+  color: var(--color-text-muted);
+  margin-bottom: var(--space-4);
+}
+
+.dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: var(--color-accent);
+}
+
+.lede {
+  font-size: 1.0625rem;
+  color: var(--color-text-muted);
+  margin-bottom: var(--space-6);
+}
+
+.actions { display: flex; flex-wrap: wrap; gap: var(--space-3); }
+
+.portrait {
+  width: 200px;
+  height: 200px;
+  border-radius: 20px;
+  object-fit: cover;
+  flex: none;
+  border: 1px solid var(--color-border);
+}
+
+@media (max-width: 760px) {
+  .hero { flex-direction: column-reverse; align-items: flex-start; gap: var(--space-6); padding-top: var(--space-8); }
+  .portrait { width: 128px; height: 128px; }
+}
