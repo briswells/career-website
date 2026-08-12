@@ -77,13 +77,19 @@ jobs:
       packages: write
     # The image build is not a pure asset compile: `/projects/[slug]` calls
     # generateStaticParams, which queries Postgres directly during `next build` to
-    # pre-render every project slug (see Dockerfile's `ARG DATABASE_URI`). That query
-    # needs a *migrated* database, not just a reachable one — Payload only auto-pushes
-    # schema when NODE_ENV !== 'production', and `next build` forces NODE_ENV=production,
-    # so an empty freshly-created Postgres would fail the build with
-    # "relation \"projects\" does not exist". `npm run seed` below runs directly on the
-    # runner (NODE_ENV unset there), so it pushes schema and seeds real project rows into
-    # the service database before the container build ever starts.
+    # pre-render every project slug (see the Dockerfile's `RUN --mount=type=secret,
+    # id=database_uri` build step). That query needs a *migrated* database, not just a
+    # reachable one — Payload only auto-pushes schema when NODE_ENV !== 'production', and
+    # `next build` forces NODE_ENV=production, so an empty freshly-created Postgres would
+    # fail the build with "relation \"projects\" does not exist". `npm run seed` below runs
+    # directly on the runner (NODE_ENV unset there), so it pushes schema and seeds real
+    # project rows into the service database before the container build ever starts.
+    #
+    # The connection string is passed to `docker/build-push-action` via `secrets:`, not
+    # `build-args:` — the Dockerfile reads it through a BuildKit secret mount so it never
+    # lands in an image layer or in the exported `cache-to: type=gha` build cache. This
+    # database is a disposable CI service container; production credentials must never be
+    # passed here.
     #
     # Getting the build (running inside the buildx container) to reach that database on
     # the runner's `localhost:5432` requires host networking on both sides: the buildx
@@ -135,8 +141,8 @@ jobs:
           context: .
           push: true
           network: host
-          build-args: |
-            DATABASE_URI=postgres://postgres:postgres@localhost:5432/brianwells_build
+          secrets: |
+            database_uri=postgres://postgres:postgres@localhost:5432/brianwells_build
           tags: |
             ghcr.io/briswells/brianwells-org:${{ github.sha }}
             ghcr.io/briswells/brianwells-org:latest

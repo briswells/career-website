@@ -1,3 +1,4 @@
+# syntax=docker/dockerfile:1
 FROM node:24-alpine AS base
 
 FROM base AS deps
@@ -15,11 +16,14 @@ ENV NEXT_TELEMETRY_DISABLED=1
 ENV PAYLOAD_SECRET=build-time-placeholder
 # /projects/[slug] uses generateStaticParams, which queries Postgres directly during
 # `next build` to pre-render every project slug. Unlike PAYLOAD_SECRET, this can't be a
-# dummy value — it must reach a real database. Supplied via --build-arg; never baked
-# in as a fixed value here.
-ARG DATABASE_URI
-ENV DATABASE_URI=$DATABASE_URI
-RUN npm run build
+# dummy value — it must reach a real database. Supplied via a BuildKit secret mount
+# rather than ARG/ENV so the connection string never lands in an image layer (an ARG/ENV
+# value is baked into the layer history and would be recoverable from an exported build
+# cache, e.g. `cache-to: type=gha`, even though it never reaches the final image). The
+# database this points at must always be a throwaway one — e.g. a CI service container —
+# never production. Production credentials must never be passed to this build.
+RUN --mount=type=secret,id=database_uri,env=DATABASE_URI \
+    npm run build
 
 FROM base AS runner
 WORKDIR /app
