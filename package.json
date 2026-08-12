@@ -16,7 +16,7 @@
     "generate:types": "cross-env NODE_OPTIONS=--no-deprecation payload generate:types",
     "generate:importmap": "cross-env NODE_OPTIONS=--no-deprecation payload generate:importmap",
     "seed": "cross-env NODE_OPTIONS=\"--no-deprecation --import=tsx/esm\" tsx scripts/seed.ts",
-    "test": "npm run test:unit && npm run test:int && npm run test:e2e",
+    "test": "npm run test:unit && npm run test:int && npm run seed && npm run test:e2e",
     "test:unit": "vitest run --config ./vitest.config.mts tests/unit",
     "test:int": "vitest run --config ./vitest.config.mts tests/int --fileParallelism=false",
     "test:e2e": "cross-env NODE_OPTIONS=\"--no-deprecation --import=tsx/esm\" playwright test --config=playwright.config.ts"

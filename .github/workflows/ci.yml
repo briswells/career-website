@@ -1,0 +1,144 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+
+env:
+  NODE_VERSION: '24'
+
+jobs:
+  verify:
+    runs-on: ubuntu-latest
+    services:
+      postgres:
+        image: postgres:16-alpine
+        env:
+          POSTGRES_USER: postgres
+          POSTGRES_PASSWORD: postgres
+          POSTGRES_DB: brianwells_test
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd pg_isready
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+    env:
+      DATABASE_URI: postgres://postgres:postgres@localhost:5432/brianwells_test
+      PAYLOAD_SECRET: ci-secret-not-used-in-production
+      IP_HASH_SALT: ci-salt-not-used-in-production
+      NEXT_PUBLIC_SERVER_URL: http://localhost:3000
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: npm
+
+      - run: npm ci
+
+      - run: npm run lint
+
+      - run: npm run generate:types
+
+      - run: npm run typecheck
+
+      - run: npm run test:unit
+
+      - run: npm run test:int
+
+      - run: npm run seed
+
+      - run: npx playwright install --with-deps chromium
+
+      - run: npm run test:e2e
+
+      - uses: actions/upload-artifact@v4
+        if: failure()
+        with:
+          name: playwright-report
+          path: playwright-report/
+          retention-days: 7
+
+  publish:
+    needs: verify
+    if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      packages: write
+    # The image build is not a pure asset compile: `/projects/[slug]` calls
+    # generateStaticParams, which queries Postgres directly during `next build` to
+    # pre-render every project slug (see Dockerfile's `ARG DATABASE_URI`). That query
+    # needs a *migrated* database, not just a reachable one — Payload only auto-pushes
+    # schema when NODE_ENV !== 'production', and `next build` forces NODE_ENV=production,
+    # so an empty freshly-created Postgres would fail the build with
+    # "relation \"projects\" does not exist". `npm run seed` below runs directly on the
+    # runner (NODE_ENV unset there), so it pushes schema and seeds real project rows into
+    # the service database before the container build ever starts.
+    #
+    # Getting the build (running inside the buildx container) to reach that database on
+    # the runner's `localhost:5432` requires host networking on both sides: the buildx
+    # builder itself (`driver-opts: network=host`) and the build's RUN instructions
+    # (`network: host` below). Without both, "localhost" inside the build resolves to the
+    # isolated buildkit container, not the runner, and the build fails with ECONNREFUSED.
+    services:
+      postgres:
+        image: postgres:16-alpine
+        env:
+          POSTGRES_USER: postgres
+          POSTGRES_PASSWORD: postgres
+          POSTGRES_DB: brianwells_build
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd pg_isready
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: npm
+
+      - run: npm ci
+
+      - name: Push schema and seed the build-time database
+        run: npm run seed
+        env:
+          DATABASE_URI: postgres://postgres:postgres@localhost:5432/brianwells_build
+          PAYLOAD_SECRET: ci-secret-not-used-in-production
+
+      - uses: docker/setup-buildx-action@v3
+        with:
+          driver-opts: network=host
+
+      - uses: docker/login-action@v3
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - uses: docker/build-push-action@v6
+        with:
+          context: .
+          push: true
+          network: host
+          build-args: |
+            DATABASE_URI=postgres://postgres:postgres@localhost:5432/brianwells_build
+          tags: |
+            ghcr.io/briswells/brianwells-org:${{ github.sha }}
+            ghcr.io/briswells/brianwells-org:latest
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
