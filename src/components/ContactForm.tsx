@@ -21,7 +21,11 @@ export function ContactForm({ siteKey }: { siteKey?: string }) {
   const [state, formAction] = useActionState(submitContact, initialState)
 
   if (state.status === 'success') {
-    return <p className={styles.success}>Thanks — your message is on its way.</p>
+    return (
+      <p className={styles.success} role="status" aria-live="polite">
+        Thanks — your message is on its way.
+      </p>
+    )
   }
 
   return (
@@ -33,7 +37,11 @@ export function ContactForm({ siteKey }: { siteKey?: string }) {
         />
       ) : null}
       <form className={styles.form} action={formAction}>
-        {state.errors?._form ? <p className={styles.error}>{state.errors._form}</p> : null}
+        {state.errors?._form ? (
+          <p className={styles.error} role="alert" aria-live="assertive">
+            {state.errors._form}
+          </p>
+        ) : null}
 
         <div className={styles.field}>
           <label htmlFor="name">Name</label>
