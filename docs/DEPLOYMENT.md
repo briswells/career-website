@@ -17,6 +17,12 @@ The app's S3 client (`src/payload.config.ts`) is configured with `region: 'auto'
 (`https://media.brianwells.org`), not the S3 API endpoint — the endpoint accepts
 uploads but does not serve objects publicly.
 
+**`R2_PUBLIC_URL` and `next.config.ts` are coupled.** `next/image`'s remote-pattern
+allow-list is derived from `R2_PUBLIC_URL` at process start (falling back to
+`media.brianwells.org` only when the variable is unset). If you ever connect a
+different custom domain to the bucket, update `R2_PUBLIC_URL` and redeploy — every
+`next/image` for a media asset will 400 until the hostnames match.
+
 ### 2. Tunnel
 
 1. Zero Trust → Networks → Tunnels → **Create a tunnel** (Cloudflared), name it `unraid`.
@@ -74,6 +80,30 @@ GRANT ALL PRIVILEGES ON DATABASE brianwells TO brianwells;
 
 Payload creates and migrates its own tables on first boot.
 
+**Reaching this database from the container.** `docker-compose.yml` sets no
+`network_mode`, no `extra_hosts`, and joins no external network, so the app
+container gets Docker's default bridge networking — it is *not* on the host's
+network namespace. If `DATABASE_URI` says `localhost` or `127.0.0.1`, the
+container resolves that to itself, not to unraid's host Postgres, and the only
+symptom is `/api/health` returning 503 with no more specific error.
+
+Use one of:
+
+- The unraid box's LAN IP (works as long as Postgres listens on that interface,
+  not just `localhost`), e.g.:
+  ```
+  DATABASE_URI=postgres://brianwells:<password>@192.168.1.50:5432/brianwells
+  ```
+- The Docker bridge gateway from inside the container (`ip route | awk '/default/ {print $3}'`
+  run inside the container, typically `172.17.0.1`), if Postgres is bound to
+  `0.0.0.0` or that bridge interface.
+- Attaching the `web` service in `docker-compose.yml` to the same Docker network as
+  the Postgres container (`networks:` on both services) and using Postgres's
+  container name as the host, e.g. `DATABASE_URI=postgres://brianwells:<password>@postgres:5432/brianwells`.
+
+Whichever you pick, confirm Postgres's `listen_addresses` and `pg_hba.conf` actually
+accept connections from that address before troubleshooting further.
+
 ## Environment variables
 
 Populate all of these in `.env` before starting the container. `.env.example` in the repo
@@ -120,8 +150,25 @@ Generate it once and keep it fixed for the life of the deployment.
    ```bash
    docker compose pull && docker compose up -d
    ```
-5. Verify: `curl -fsS http://localhost:3000/api/health` → `{"status":"ok"}`.
-6. Visit `https://brianwells.org/admin`, clear Cloudflare Access, and create the admin user.
+5. **Seed the database once, before the first visit.** On first boot Postgres is
+   empty. The image ships no seed capability — `scripts/seed.ts` runs via `tsx`, a
+   devDependency that is never installed in the `runner` stage, and it is not part
+   of the `.next/standalone` output that `next build` traces, so the script simply
+   does not exist inside the running container. There is no `docker compose exec`
+   equivalent for this step. Instead, run it from a local checkout, pointed at the
+   production database over the network path documented above:
+   ```bash
+   DATABASE_URI=postgres://brianwells:<password>@192.168.1.50:5432/brianwells \
+   PAYLOAD_SECRET=<same secret as .env> \
+     npm run seed
+   ```
+   The script is idempotent (upserts by slug/company+role/degree), so re-running it
+   later is safe. Skipping this step means `/admin` shows nothing while public pages
+   still render whatever content was baked into the image at build time from CI's
+   throwaway database — and the first real CMS edit will abruptly make a page render
+   empty.
+6. Verify: `curl -fsS http://localhost:3000/api/health` → `{"status":"ok"}`.
+7. Visit `https://brianwells.org/admin`, clear Cloudflare Access, and create the admin user.
 
 ## Updating
 
