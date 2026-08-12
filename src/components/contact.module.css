@@ -1,0 +1,35 @@
+.form { display: flex; flex-direction: column; gap: var(--space-4); max-width: 560px; }
+.field { display: flex; flex-direction: column; gap: var(--space-2); }
+.field label { font-size: 0.875rem; font-weight: 600; }
+
+.field input,
+.field textarea {
+  font: inherit;
+  color: var(--color-text);
+  background: var(--color-surface);
+  border: 1px solid var(--color-border);
+  border-radius: 10px;
+  padding: 10px 12px;
+}
+
+.field input:focus,
+.field textarea:focus { border-color: var(--color-accent); outline: none; }
+
+.field textarea { min-height: 160px; resize: vertical; }
+
+.error { color: var(--color-error); font-size: 0.8125rem; }
+.success { color: var(--color-accent); font-weight: 600; }
+
+.submit {
+  align-self: flex-start;
+  font: inherit;
+  font-weight: 600;
+  cursor: pointer;
+  padding: 10px 20px;
+  border: none;
+  border-radius: var(--radius-pill);
+  background: var(--color-accent);
+  color: var(--color-accent-contrast);
+}
+
+.submit:disabled { opacity: 0.6; cursor: progress; }
