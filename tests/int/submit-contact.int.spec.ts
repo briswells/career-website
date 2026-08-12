@@ -32,6 +32,25 @@ vi.mock('resend', () => ({
 // `next/headers` and `resend` modules instead of the real ones.
 const { submitContact } = await import('@/actions/submit-contact')
 
+// `process.env[key] = undefined` does not delete the key — Node coerces it to
+// the string `"undefined"`, which is truthy. A snapshot taken while a var is
+// unset must be restored by deleting the key, not by reassigning `undefined`,
+// or every later test in this file (or, since `test:int` runs with
+// `--fileParallelism=false`, in any later spec in the same process) would see
+// a truthy value where none was ever set.
+function setEnv(vars: Record<string, string>): () => void {
+  const originals = Object.fromEntries(
+    Object.keys(vars).map((key) => [key, process.env[key]]),
+  )
+  Object.assign(process.env, vars)
+  return () => {
+    for (const [key, value] of Object.entries(originals)) {
+      if (value === undefined) delete process.env[key]
+      else process.env[key] = value
+    }
+  }
+}
+
 function formData(overrides: Partial<Record<string, string>> = {}): FormData {
   const data = new FormData()
   data.set('name', overrides.name ?? 'Ada Lovelace')
@@ -80,15 +99,18 @@ describe('submitContact — persistence', () => {
   })
 
   it('still persists the submission and reports success when the email send fails', async () => {
+    // This proves persistence is independent of the send outcome — a
+    // property distinct from ordering. `payload.create` is unconditional and
+    // the send is wrapped in its own swallowing try/catch, so this assertion
+    // holds no matter which statement runs first; it does NOT guard against
+    // a reorder. The "creates the submission before attempting to send"
+    // test below covers ordering specifically.
     sendMock.mockRejectedValueOnce(new Error('Resend is down'))
-    const originalEnv = {
-      RESEND_API_KEY: process.env.RESEND_API_KEY,
-      CONTACT_TO_EMAIL: process.env.CONTACT_TO_EMAIL,
-      CONTACT_FROM_EMAIL: process.env.CONTACT_FROM_EMAIL,
-    }
-    process.env.RESEND_API_KEY = 'test-key'
-    process.env.CONTACT_TO_EMAIL = 'owner@example.com'
-    process.env.CONTACT_FROM_EMAIL = 'noreply@example.com'
+    const restoreEnv = setEnv({
+      RESEND_API_KEY: 'test-key',
+      CONTACT_TO_EMAIL: 'owner@example.com',
+      CONTACT_FROM_EMAIL: 'noreply@example.com',
+    })
 
     try {
       const result = await submitContact(
@@ -96,9 +118,6 @@ describe('submitContact — persistence', () => {
         formData({ email: 'send-fails@example.com' }),
       )
 
-      // The row must exist regardless of whether the email send succeeded —
-      // that ordering (persist, then attempt to send) is exactly what a
-      // future refactor could silently break.
       expect(sendMock).toHaveBeenCalledTimes(1)
       expect(result.status).toBe('success')
 
@@ -106,9 +125,41 @@ describe('submitContact — persistence', () => {
       expect(docs).toHaveLength(1)
       expect(docs[0]?.email).toBe('send-fails@example.com')
     } finally {
-      process.env.RESEND_API_KEY = originalEnv.RESEND_API_KEY
-      process.env.CONTACT_TO_EMAIL = originalEnv.CONTACT_TO_EMAIL
-      process.env.CONTACT_FROM_EMAIL = originalEnv.CONTACT_FROM_EMAIL
+      restoreEnv()
+    }
+  })
+
+  it('creates the submission before attempting to send the email', async () => {
+    // Genuine ordering assertion: compares the relative invocation order of
+    // the two side effects, rather than a property (e.g. "the row exists")
+    // that would hold regardless of which one ran first. `payload.create` is
+    // spied on the real, cached Payload instance — `getPayload({ config })`
+    // returns the same singleton `submitContact` uses internally for the
+    // same imported config module, so this spy observes the actual call
+    // `submitContact` makes, not a decoy.
+    const restoreEnv = setEnv({
+      RESEND_API_KEY: 'test-key',
+      CONTACT_TO_EMAIL: 'owner@example.com',
+      CONTACT_FROM_EMAIL: 'noreply@example.com',
+    })
+    const createSpy = vi.spyOn(payload, 'create')
+
+    try {
+      const result = await submitContact(
+        { status: 'idle' },
+        formData({ email: 'order-check@example.com' }),
+      )
+
+      expect(result.status).toBe('success')
+      expect(createSpy).toHaveBeenCalledTimes(1)
+      expect(sendMock).toHaveBeenCalledTimes(1)
+
+      const createOrder = createSpy.mock.invocationCallOrder[0]
+      const sendOrder = sendMock.mock.invocationCallOrder[0]
+      expect(createOrder).toBeLessThan(sendOrder)
+    } finally {
+      createSpy.mockRestore()
+      restoreEnv()
     }
   })
 })
@@ -146,10 +197,8 @@ describe('submitContact — production observability', () => {
 
   it('warns, but does not fail closed, when TURNSTILE_SECRET_KEY is unset in production', async () => {
     expect(process.env.TURNSTILE_SECRET_KEY).toBeUndefined()
-    const originalNodeEnv = process.env.NODE_ENV
     const warnSpy = vi.spyOn(console, 'warn').mockImplementation(() => {})
-    // @ts-expect-error -- NODE_ENV is typed readonly in this project's env types
-    process.env.NODE_ENV = 'production'
+    const restoreEnv = setEnv({ NODE_ENV: 'production' })
 
     try {
       const result = await submitContact(
@@ -163,8 +212,7 @@ describe('submitContact — production observability', () => {
       )
     } finally {
       warnSpy.mockRestore()
-      // @ts-expect-error -- see above
-      process.env.NODE_ENV = originalNodeEnv
+      restoreEnv()
     }
   })
 })
