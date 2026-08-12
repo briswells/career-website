@@ -53,7 +53,15 @@ export async function submitContact(
   })
 
   if (!parsed.success) {
-    return { status: 'error', errors: fieldErrors(parsed.error) }
+    // `turnstileToken` has no field in the form, so an error keyed to it would
+    // render nowhere and the user would see the form silently do nothing.
+    // Route it to `_form`, the one error slot every render path checks.
+    const errors = fieldErrors(parsed.error)
+    if (errors.turnstileToken) {
+      errors._form = errors.turnstileToken
+      delete errors.turnstileToken
+    }
+    return { status: 'error', errors }
   }
 
   const ip = await clientIp()
@@ -64,6 +72,15 @@ export async function submitContact(
     if (!human) {
       return { status: 'error', errors: { _form: 'Verification failed. Please try again.' } }
     }
+  } else if (process.env.NODE_ENV === 'production') {
+    // Unset in local dev is expected and stays silent. Unset in production
+    // means the form is live with no bot protection — that must be visible
+    // in the container logs, not just implied by an absent widget. This does
+    // not fail closed: a config slip should degrade to "no CAPTCHA," not
+    // "contact form is down."
+    console.warn(
+      'TURNSTILE_SECRET_KEY is not set in production; accepting contact submissions with no bot verification.',
+    )
   }
 
   const payload = await getPayload({ config })
