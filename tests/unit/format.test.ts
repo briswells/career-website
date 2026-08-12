@@ -1,5 +1,10 @@
 import { describe, expect, it } from 'vitest'
-import { formatDateRange, formatMonthYear, safeFormatDateRange } from '@/lib/format'
+import {
+  formatDateRange,
+  formatMonthYear,
+  safeFormatDateRange,
+  safeFormatMonthYear,
+} from '@/lib/format'
 
 describe('formatMonthYear', () => {
   it('formats an ISO date as abbreviated month and year in UTC', () => {
@@ -50,5 +55,15 @@ describe('safeFormatDateRange', () => {
     expect(
       safeFormatDateRange('2024-01-01T00:00:00.000Z', '2025-08-01T00:00:00.000Z', false),
     ).toBe('Jan 2024 – Aug 2025')
+  })
+})
+
+describe('safeFormatMonthYear', () => {
+  it('returns null instead of throwing when the value is unparseable', () => {
+    expect(safeFormatMonthYear('not-a-date')).toBeNull()
+  })
+
+  it('formats a valid date the same as formatMonthYear', () => {
+    expect(safeFormatMonthYear('2025-08-01T00:00:00.000Z')).toBe('Aug 2025')
   })
 })

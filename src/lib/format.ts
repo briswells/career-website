@@ -41,3 +41,17 @@ export function safeFormatDateRange(
     return null
   }
 }
+
+/**
+ * Render-safe wrapper around formatMonthYear, for the same reason as
+ * safeFormatDateRange above: no collection validates date format at write
+ * time, so a single malformed education date should not white-screen the
+ * page. Callers get null back and can omit the date instead of crashing.
+ */
+export function safeFormatMonthYear(value: string | Date): string | null {
+  try {
+    return formatMonthYear(value)
+  } catch {
+    return null
+  }
+}
