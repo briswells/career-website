@@ -5,6 +5,7 @@ import { RichText } from '@/components/RichText'
 import { Button } from '@/components/ui/Button'
 import { Container } from '@/components/ui/Container'
 import { Tag } from '@/components/ui/Tag'
+import { asMedia } from '@/lib/media'
 import { getProjectBySlug, getProjects } from '@/lib/queries'
 import type { Media } from '@/payload-types'
 import styles from '@/components/projectDetail.module.css'
@@ -28,10 +29,7 @@ export default async function ProjectDetailPage({ params }: Params) {
   const project = await getProjectBySlug(slug)
   if (!project) notFound()
 
-  const cover =
-    project.coverImage && typeof project.coverImage === 'object'
-      ? (project.coverImage as Media)
-      : null
+  const cover = asMedia(project.coverImage)
   const gallery = (project.gallery ?? []).filter(
     (item): item is Media => typeof item === 'object' && item !== null,
   )

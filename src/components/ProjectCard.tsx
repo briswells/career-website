@@ -1,16 +1,12 @@
 import Image from 'next/image'
 import Link from 'next/link'
-import type { Media, Project } from '@/payload-types'
+import { asMedia } from '@/lib/media'
+import type { Project } from '@/payload-types'
 import { Tag } from './ui/Tag'
 import styles from './project.module.css'
 
-function coverOf(project: Project): Media | null {
-  const cover = project.coverImage
-  return cover && typeof cover === 'object' ? cover : null
-}
-
 export function ProjectCard({ project }: { project: Project }) {
-  const cover = coverOf(project)
+  const cover = asMedia(project.coverImage)
   const tags = (project.techStack ?? []).filter((t) => Boolean(t.name))
 
   return (

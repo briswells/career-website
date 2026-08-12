@@ -5,8 +5,8 @@ import { SkillGroups } from '@/components/SkillGroups'
 import { Button } from '@/components/ui/Button'
 import { Container } from '@/components/ui/Container'
 import { Section } from '@/components/ui/Section'
+import { asMedia } from '@/lib/media'
 import { getEducation, getExperience, getSiteSettings, getSkills } from '@/lib/queries'
-import type { Media } from '@/payload-types'
 
 export const metadata: Metadata = {
   title: 'Experience',
@@ -21,10 +21,7 @@ export default async function ExperiencePage() {
     getSiteSettings(),
   ])
 
-  const resume =
-    settings.resumePdf && typeof settings.resumePdf === 'object'
-      ? (settings.resumePdf as Media)
-      : null
+  const resume = asMedia(settings.resumePdf)
 
   return (
     <Container>

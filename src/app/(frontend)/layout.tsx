@@ -1,17 +1,17 @@
 import type { Metadata } from 'next'
 import type { ReactNode } from 'react'
-import config from '@payload-config'
-import { getPayload } from 'payload'
 import { Footer } from '@/components/Footer'
 import { Header } from '@/components/Header'
 import styles from '@/components/layout.module.css'
 import { presentLinks } from '@/lib/links'
+import { getSiteSettings } from '@/lib/queries'
 import './styles.css'
 
 export async function generateMetadata(): Promise<Metadata> {
-  const payload = await getPayload({ config })
-  const settings = await payload.findGlobal({ slug: 'site-settings', depth: 1 })
-  const name = settings.name || 'Brian Wells'
+  const settings = await getSiteSettings()
+  // `name` is a required field with `defaultValue: 'Brian Wells'` (see
+  // src/globals/SiteSettings.ts), so it is never empty and needs no fallback.
+  const { name } = settings
   const title = settings.defaultSeo?.title || name
   const description =
     settings.defaultSeo?.description || settings.tagline || 'Software and infrastructure engineer.'
@@ -26,9 +26,8 @@ export async function generateMetadata(): Promise<Metadata> {
 }
 
 export default async function FrontendLayout({ children }: { children: ReactNode }) {
-  const payload = await getPayload({ config })
-  const settings = await payload.findGlobal({ slug: 'site-settings', depth: 0 })
-  const name = settings.name || 'Brian Wells'
+  const settings = await getSiteSettings()
+  const { name } = settings
 
   return (
     <html lang="en">

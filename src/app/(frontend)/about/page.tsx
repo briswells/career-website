@@ -2,8 +2,8 @@ import type { Metadata } from 'next'
 import Image from 'next/image'
 import { RichText } from '@/components/RichText'
 import { Container } from '@/components/ui/Container'
+import { asMedia } from '@/lib/media'
 import { getAbout } from '@/lib/queries'
-import type { Media } from '@/payload-types'
 
 export const metadata: Metadata = {
   title: 'About',
@@ -12,8 +12,7 @@ export const metadata: Metadata = {
 
 export default async function AboutPage() {
   const about = await getAbout()
-  const portrait =
-    about.portrait && typeof about.portrait === 'object' ? (about.portrait as Media) : null
+  const portrait = asMedia(about.portrait)
 
   return (
     <Container>
