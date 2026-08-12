@@ -19,6 +19,17 @@ const base = {
   createdAt: '2026-01-01T00:00:00.000Z',
 } as unknown as Project
 
+const withCover = {
+  ...base,
+  coverImage: {
+    id: 2,
+    alt: 'Storefront of Portside Pottery',
+    url: '/api/media/file/portside-cover.jpg',
+    updatedAt: '2026-01-01T00:00:00.000Z',
+    createdAt: '2026-01-01T00:00:00.000Z',
+  },
+} as unknown as Project
+
 describe('ProjectCard', () => {
   it('links to the project detail page', () => {
     render(<ProjectCard project={base} />)
@@ -42,5 +53,12 @@ describe('ProjectCard', () => {
   it('renders no image element when there is no cover image', () => {
     const { container } = render(<ProjectCard project={base} />)
     expect(container.querySelector('img')).toBeNull()
+  })
+
+  it('renders an image with the cover alt text when a cover image is populated', () => {
+    const { container } = render(<ProjectCard project={withCover} />)
+    const img = container.querySelector('img')
+    expect(img).not.toBeNull()
+    expect(img).toHaveAttribute('alt', 'Storefront of Portside Pottery')
   })
 })
