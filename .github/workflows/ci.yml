@@ -162,3 +162,43 @@ jobs:
             ghcr.io/briswells/brianwells-org:latest
           cache-from: type=gha
           cache-to: type=gha,mode=max
+
+  deploy:
+    needs: publish
+    if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+    runs-on: ubuntu-latest
+    # SSHes into the droplet as the scoped `deploy` user (docker-group member, no
+    # sudo, no root) and pulls+restarts the already-published image. Schema
+    # migrations are deliberately NOT run here — see docs/DEPLOYMENT.md's
+    # "Schema changes" section. Automatically applying an unreviewed migration
+    # against production on every push is a materially bigger risk than
+    # restarting a container on the same schema, so that stays a manual,
+    # one-command step.
+    steps:
+      - uses: webfactory/ssh-agent@v0.9.0
+        with:
+          ssh-private-key: ${{ secrets.DEPLOY_SSH_KEY }}
+
+      - name: Pull and restart on the droplet
+        run: |
+          ssh -o StrictHostKeyChecking=accept-new "${{ secrets.DEPLOY_USER }}@${{ secrets.DEPLOY_HOST }}" '
+            set -e
+            cd /opt/career-website
+            docker compose pull
+            docker compose up -d
+            docker image prune -f
+          '
+
+      - name: Verify the deploy
+        run: |
+          ssh -o StrictHostKeyChecking=accept-new "${{ secrets.DEPLOY_USER }}@${{ secrets.DEPLOY_HOST }}" '
+            for i in $(seq 1 12); do
+              if curl -fsS http://127.0.0.1:3000/api/health | grep -q ok; then
+                echo "health check passed"
+                exit 0
+              fi
+              sleep 5
+            done
+            echo "health check did not pass within 60s"
+            exit 1
+          '

@@ -1,9 +1,30 @@
 services:
+  postgres:
+    image: postgres:16-alpine
+    container_name: career-website-db
+    restart: unless-stopped
+    env_file: .env
+    # Bound to loopback only — never reachable from the public internet, even
+    # though the droplet has a public IP. Reach it for one-off tasks (like
+    # seeding) via an SSH tunnel from your machine; see docs/DEPLOYMENT.md.
+    ports:
+      - '127.0.0.1:5432:5432'
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+    healthcheck:
+      test: ['CMD-SHELL', 'pg_isready -U $$POSTGRES_USER']
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
   web:
     image: ghcr.io/briswells/brianwells-org:latest
     container_name: brianwells-org
     restart: unless-stopped
     env_file: .env
+    depends_on:
+      postgres:
+        condition: service_healthy
     ports:
       - '3000:3000'
     healthcheck:
@@ -16,3 +37,6 @@ services:
       timeout: 5s
       retries: 3
       start_period: 40s
+
+volumes:
+  pgdata:
