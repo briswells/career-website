@@ -3,7 +3,7 @@ import { Container } from './ui/Container'
 import styles from './layout.module.css'
 
 const NAV = [
-  { href: '/projects', label: 'Work' },
+  { href: '/projects', label: 'Projects' },
   { href: '/experience', label: 'Experience' },
   { href: '/about', label: 'About' },
   { href: '/contact', label: 'Contact' },

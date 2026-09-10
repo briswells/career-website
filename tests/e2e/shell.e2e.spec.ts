@@ -10,7 +10,7 @@ test('homepage renders an identifiable heading', async ({ page }) => {
 test('header exposes primary navigation', async ({ page }) => {
   await page.goto('/')
   const nav = page.getByRole('navigation', { name: 'Primary' })
-  await expect(nav.getByRole('link', { name: 'Work' })).toBeVisible()
+  await expect(nav.getByRole('link', { name: 'Projects' })).toBeVisible()
   await expect(nav.getByRole('link', { name: 'Experience' })).toBeVisible()
   await expect(nav.getByRole('link', { name: 'About' })).toBeVisible()
   await expect(nav.getByRole('link', { name: 'Contact' })).toBeVisible()
