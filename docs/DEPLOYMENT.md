@@ -240,6 +240,15 @@ ssh root@206.189.255.28 "cat >> /home/deploy/.ssh/authorized_keys" < ./deploy-ke
 # then delete both local files
 ```
 
+**`docker-compose.yml` itself isn't synced by the automated pipeline.** `deploy`
+only runs `docker compose pull && docker compose up -d` on the droplet's *existing*
+copy of the file — it doesn't push compose-file changes there. If you ever edit
+`docker-compose.yml` (a new service, a changed port binding, etc.), copy it to the
+droplet by hand before the next deploy:
+```bash
+scp docker-compose.yml deploy@206.189.255.28:/opt/career-website/docker-compose.yml
+```
+
 **Schema changes.** The `deploy` job intentionally does not run `payload migrate`.
 Automatically applying an unreviewed schema migration against production on every push
 is a materially bigger risk than restarting a container on an unchanged schema. When a
