@@ -6,16 +6,24 @@ import { Button } from '@/components/ui/Button'
 import { Container } from '@/components/ui/Container'
 import { Tag } from '@/components/ui/Tag'
 import { asMedia } from '@/lib/media'
-import { getProjectBySlug, getProjects } from '@/lib/queries'
+import { getProjectBySlug } from '@/lib/queries'
 import type { Media } from '@/payload-types'
 import styles from '@/components/projectDetail.module.css'
 
 type Params = { params: Promise<{ slug: string }> }
 
-export async function generateStaticParams() {
-  const projects = await getProjects()
-  return projects.map((project) => ({ slug: project.slug }))
-}
+// Without an explicit `dynamic` export, Next prerenders every slug returned
+// by `generateStaticParams` once at `next build` time and ships that static
+// HTML in the image. Any CMS edit made after that point is invisible on the
+// live site until the next deploy rebuilds it from scratch — and a redeploy
+// for something unrelated silently REVERTS every edit made in between back
+// to whatever the build-time database happened to contain. `force-dynamic`
+// renders this page fresh on every request instead, so content always
+// reflects the live database and a deploy can never undo an admin edit.
+// `generateStaticParams` is removed along with it — it existed only to
+// enumerate slugs for prerendering, which no longer happens, and dropping
+// it means `next build` no longer needs any database access at all.
+export const dynamic = 'force-dynamic'
 
 export async function generateMetadata({ params }: Params): Promise<Metadata> {
   const { slug } = await params
