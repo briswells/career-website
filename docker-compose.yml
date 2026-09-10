@@ -25,8 +25,13 @@ services:
     depends_on:
       postgres:
         condition: service_healthy
+    # Bound to loopback only. The droplet has a public IP — without this the
+    # app is reachable at http://<droplet-ip>:3000 directly, bypassing
+    # Cloudflare Access and Turnstile entirely. Cloudflare Tunnel (cloudflared,
+    # installed as a separate systemd service, not in this compose file)
+    # reaches it over this same loopback interface.
     ports:
-      - '3000:3000'
+      - '127.0.0.1:3000:3000'
     healthcheck:
       test:
         - CMD
