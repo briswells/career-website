@@ -81,7 +81,7 @@ describe('submitContact — persistence', () => {
   beforeEach(() => {
     headersStore.clear()
     headersStore.set('cf-connecting-ip', ip)
-    sendMock.mockReset()
+    sendMock.mockReset().mockResolvedValue({ data: { id: 'test-email-id' }, error: null })
   })
 
   afterEach(async () => {
@@ -125,6 +125,46 @@ describe('submitContact — persistence', () => {
       expect(docs).toHaveLength(1)
       expect(docs[0]?.email).toBe('send-fails@example.com')
     } finally {
+      restoreEnv()
+    }
+  })
+
+  it('still persists the submission and reports success when Resend rejects the send', async () => {
+    // Resend's SDK does not throw for API-level rejections (unverified
+    // domain, restricted key, invalid sender) — it resolves with
+    // { data: null, error }. This is a genuinely different failure mode from
+    // the thrown-exception test above, and it's the one that was silently
+    // invisible before: no exception means the try/catch never fires unless
+    // the `error` field is checked explicitly.
+    sendMock.mockResolvedValueOnce({
+      data: null,
+      error: { name: 'validation_error', message: 'The brianwells.org domain is not verified.' },
+    })
+    const restoreEnv = setEnv({
+      RESEND_API_KEY: 'test-key',
+      CONTACT_TO_EMAIL: 'owner@example.com',
+      CONTACT_FROM_EMAIL: 'noreply@example.com',
+    })
+    const errorSpy = vi.spyOn(payload.logger, 'error').mockImplementation(() => undefined as never)
+
+    try {
+      const result = await submitContact(
+        { status: 'idle' },
+        formData({ email: 'resend-rejected@example.com' }),
+      )
+
+      expect(sendMock).toHaveBeenCalledTimes(1)
+      expect(result.status).toBe('success')
+      expect(errorSpy).toHaveBeenCalledWith(
+        expect.objectContaining({ err: expect.objectContaining({ name: 'validation_error' }) }),
+        'Resend delivery failed',
+      )
+
+      const { docs } = await submissionsFor(ipHash)
+      expect(docs).toHaveLength(1)
+      expect(docs[0]?.email).toBe('resend-rejected@example.com')
+    } finally {
+      errorSpy.mockRestore()
       restoreEnv()
     }
   })

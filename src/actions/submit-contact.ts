@@ -123,13 +123,21 @@ export async function submitContact(
   if (apiKey && to && from) {
     try {
       const resend = new Resend(apiKey)
-      await resend.emails.send({
+      const { error } = await resend.emails.send({
         from,
         to,
         replyTo: parsed.data.email,
         subject: `brianwells.org — message from ${parsed.data.name}`,
         text: `${parsed.data.name} <${parsed.data.email}>\n\n${parsed.data.message}`,
       })
+      // Resend's SDK does not throw for API-level rejections (an unverified
+      // domain, a restricted key, an invalid from address) — it resolves with
+      // { data: null, error }. Checking only try/catch here would let a
+      // misconfigured sender fail completely silently: no log, "success"
+      // shown to the visitor, and the message never actually sent.
+      if (error) {
+        payload.logger.error({ err: error }, 'Resend delivery failed')
+      }
     } catch (error) {
       // The submission is already durable; a delivery failure must not fail the request.
       payload.logger.error({ err: error }, 'Resend delivery failed')
