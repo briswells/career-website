@@ -39,7 +39,7 @@ export default async function HomePage() {
         portrait={portrait}
         resumeUrl={resume?.url}
       />
-      <Section title="Selected work" id="work">
+      <Section title="Featured work" id="work">
         <ProjectGrid projects={featured} />
       </Section>
       <Section title="Experience" id="experience">

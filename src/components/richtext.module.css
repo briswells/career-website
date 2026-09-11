@@ -1,0 +1,15 @@
+.prose {
+  font-family: var(--font-serif);
+  font-size: 1.0625rem;
+  line-height: 1.75;
+  color: var(--color-text);
+}
+
+.prose p {
+  margin: 0 0 var(--space-4);
+  max-width: var(--measure);
+}
+
+.prose p:last-child {
+  margin-bottom: 0;
+}

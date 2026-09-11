@@ -9,7 +9,7 @@ test('hero shows the headline', async ({ page }) => {
 
 test('featured projects appear with links to detail pages', async ({ page }) => {
   await page.goto('/')
-  const featured = page.getByRole('region', { name: 'Selected work' })
+  const featured = page.getByRole('region', { name: 'Featured work' })
   await expect(featured.getByRole('link', { name: 'Portside Pottery' })).toHaveAttribute(
     'href',
     '/projects/portside-pottery',
